@@ -76,12 +76,16 @@ class ElsSearch():
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
         self._results = api_response['search-results']['entry']
         if get_all is True:
-            while (self.num_res < self.tot_num_res) and (self.num_res < 5000):
+            import time
+            while (self.num_res < self.tot_num_res):
+                start_time = time.time()
+                print(self.num_res, self.tot_num_res)
                 for e in api_response['search-results']['link']:
                     if e['@ref'] == 'next':
                         next_url = e['@href']
                 api_response = els_client.exec_request(next_url)
-                self._results += api_response['search-results']['entry']         
+                self._results += api_response['search-results']['entry']
+                print("time:    ", time.time() - start_time)
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the
