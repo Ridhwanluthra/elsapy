@@ -54,6 +54,8 @@ list_raw_data = list()
 
 for i, result in enumerate(scopus.results):
 	print(i)
+	if i == 100:
+		break
 	try:
 		int_id = int(result["dc:identifier"][10:])
 
