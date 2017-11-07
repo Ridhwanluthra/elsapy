@@ -77,15 +77,31 @@ class ElsSearch():
         self._results = api_response['search-results']['entry']
         if get_all is True:
             import time
-            while (self.num_res < self.tot_num_res and self.num_res < num_results):
-                start_time = time.time()
-                print(self.num_res, self.tot_num_res)
-                for e in api_response['search-results']['link']:
-                    if e['@ref'] == 'next':
-                        next_url = e['@href']
-                api_response = els_client.exec_request(next_url)
-                self._results += api_response['search-results']['entry']
-                print("time:    ", time.time() - start_time)
+            try:
+                i = 1
+                range_time = time.time()
+                while (self.num_res < self.tot_num_res):
+                    if i%50 == 0:
+                        # store into pickle files
+                        pickle.dump([i, api_response, self._results], open("search_results.p", "wb"))
+                        pickle.dump([i, api_response, self._results], open("backup/search_results_" + str(i) + ".p", "wb"))
+                        
+                        print("time to get 50: {} minutes".format((time.time() - range_time) / 60))
+                        print("Total time remaining: {} hours".format(((((self.tot_num_res / 25) - i) / 50) * (time.time() - range_time)) / 3600))
+                        
+                        range_time = time.time()
+                    
+                    print("{}% done".format((self.num_res / self.tot_num_res) * 100))
+                    
+                    for e in api_response['search-results']['link']:
+                        if e['@ref'] == 'next':
+                            next_url = e['@href']
+                    
+                    api_response = els_client.exec_request(next_url)
+                    self._results += api_response['search-results']['entry']
+            except Exception as e:
+                print(e)
+                continue
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the
