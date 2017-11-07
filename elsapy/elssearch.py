@@ -66,7 +66,7 @@ class ElsSearch():
         """Gets the request uri for the search"""
         return self._uri
 
-    def execute(self, els_client = None, get_all = False):
+    def execute(self, els_client=None, get_all=False, num_results=100):
         """Executes the search. If get_all = False (default), this retrieves
             the default number of results specified for the API. If
             get_all = True, multiple API calls will be made to iteratively get 
@@ -77,7 +77,7 @@ class ElsSearch():
         self._results = api_response['search-results']['entry']
         if get_all is True:
             import time
-            while (self.num_res < self.tot_num_res):
+            while (self.num_res < self.tot_num_res and self.num_res < num_results):
                 start_time = time.time()
                 print(self.num_res, self.tot_num_res)
                 for e in api_response['search-results']['link']:
