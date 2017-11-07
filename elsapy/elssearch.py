@@ -74,24 +74,26 @@ class ElsSearch():
         ## TODO: add exception handling
         api_response = els_client.exec_request(self._uri)
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
+        print(self._tot_num_res)
         self._results = api_response['search-results']['entry']
         if get_all is True:
             import time
-            try:
-                i = 1
-                range_time = time.time()
-                while (self.num_res < self.tot_num_res):
+            import pickle
+            i = 1
+            range_time = time.time()
+            while (self.num_res < self.tot_num_res):
+                try:
                     if i%50 == 0:
                         # store into pickle files
-                        pickle.dump([i, api_response, self._results], open("search_results.p", "wb"))
-                        pickle.dump([i, api_response, self._results], open("backup/search_results_" + str(i) + ".p", "wb"))
+                        pickle.dump([i, api_response, self._results], open("scidir_search_results.p", "wb"))
+                        pickle.dump([i, api_response, self._results], open("backup/scidir_search_results_" + str(i) + ".p", "wb"))
                         
                         print("time to get 50: {} minutes".format((time.time() - range_time) / 60))
                         print("Total time remaining: {} hours".format(((((self.tot_num_res / 25) - i) / 50) * (time.time() - range_time)) / 3600))
                         
                         range_time = time.time()
                     
-                    print("{}% done".format((self.num_res / self.tot_num_res) * 100))
+                    print("{}: {}% done".format(i, (self.num_res / self.tot_num_res) * 100))
                     
                     for e in api_response['search-results']['link']:
                         if e['@ref'] == 'next':
@@ -99,9 +101,10 @@ class ElsSearch():
                     
                     api_response = els_client.exec_request(next_url)
                     self._results += api_response['search-results']['entry']
-            except Exception as e:
-                print(e)
-                continue
+                    i+=1
+                except Exception as e:
+                    print(e)
+                    continue
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the
