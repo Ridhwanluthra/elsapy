@@ -67,19 +67,28 @@ class ElsSearch():
         return self._uri
 
     def execute(self, els_client=None, get_all=False, num_results=100):
+        import time
+        import pickle
         """Executes the search. If get_all = False (default), this retrieves
             the default number of results specified for the API. If
             get_all = True, multiple API calls will be made to iteratively get 
             all results for the search, up to a maximum of 5,000."""
         ## TODO: add exception handling
-        api_response = els_client.exec_request(self._uri)
-        self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
-        print(self._tot_num_res)
-        self._results = api_response['search-results']['entry']
-        if get_all is True:
-            import time
-            import pickle
+        import os
+        if "scidir_search_results.p" in os.listdir():
+            temp = pickle.load(open("scidir_search_results.p", "rb"))
+            api_response = temp[1]
+            i = temp[0]
+            self._results = temp[2]
+            self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
+        else:
             i = 1
+            api_response = els_client.exec_request(self._uri)
+            self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
+            print(self._tot_num_res)
+            self._results = api_response['search-results']['entry']
+        
+        if get_all is True:
             range_time = time.time()
             while (self.num_res < self.tot_num_res):
                 try:
