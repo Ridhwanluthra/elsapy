@@ -13,7 +13,7 @@ con_file.close()
 ## Initialize client
 client = ElsClient(config['apikey'])
 
-scidir = pickle.load(open("scidir_results.p", "rb"))
+scidir = pickle.load(open("scidir_search_results.p", "rb"))[2][:57512]
 
 list_raw_data = list()
 index = 0
@@ -26,7 +26,7 @@ else:
 
 import time
 range_time = time.time()
-for i, result in enumerate(scidir.results):
+for i, result in enumerate(scidir):
     if i == 0 and old is not None:
         index, list_raw_data = old
 
@@ -37,13 +37,13 @@ for i, result in enumerate(scidir.results):
         pickle.dump([i, list_raw_data], open("scidir_metadata.p", "wb"))
         pickle.dump([i, list_raw_data], open("backup/scidir_metadata_" + str(i) + ".p", "wb"))
         print("time to get 50: {} minutes".format((time.time() - range_time) / 60))
-        print("Total time remaining: {} hours".format((((len(scidir.results) - i) / 50) * (time.time() - range_time)) / 3600))
+        print("Total time remaining: {} hours".format((((len(scidir) - i) / 50) * (time.time() - range_time)) / 3600))
         range_time = time.time()
 
     try:
         ## scidir (Abtract) document example
         # Initialize document with ID as integer
-        doi_doc = FullDoc(doi = result["dc:identifier"])
+        doi_doc = FullDoc(doi = result["prism:doi"])
         if doi_doc.read(client):
             list_raw_data.append(doi_doc)
         else:
