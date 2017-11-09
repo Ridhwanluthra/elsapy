@@ -67,25 +67,53 @@ class ElsSearch():
         return self._uri
 
     def execute(self, els_client=None, get_all=False, num_results=100):
+        import time
+        import pickle
         """Executes the search. If get_all = False (default), this retrieves
             the default number of results specified for the API. If
             get_all = True, multiple API calls will be made to iteratively get 
             all results for the search, up to a maximum of 5,000."""
         ## TODO: add exception handling
-        api_response = els_client.exec_request(self._uri)
-        self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
-        self._results = api_response['search-results']['entry']
+        import os
+        if "scidir_search_results.p" in os.listdir():
+            temp = pickle.load(open("scidir_search_results.p", "rb"))
+            api_response = temp[1]
+            i = temp[0]
+            self._results = temp[2]
+            self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
+        else:
+            i = 1
+            api_response = els_client.exec_request(self._uri)
+            self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
+            print(self._tot_num_res)
+            self._results = api_response['search-results']['entry']
+        
         if get_all is True:
-            import time
-            while (self.num_res < self.tot_num_res and self.num_res < num_results):
-                start_time = time.time()
-                print(self.num_res, self.tot_num_res)
-                for e in api_response['search-results']['link']:
-                    if e['@ref'] == 'next':
-                        next_url = e['@href']
-                api_response = els_client.exec_request(next_url)
-                self._results += api_response['search-results']['entry']
-                print("time:    ", time.time() - start_time)
+            range_time = time.time()
+            while (self.num_res < self.tot_num_res):
+                try:
+                    if i%50 == 0:
+                        # store into pickle files
+                        pickle.dump([i, api_response, self._results], open("scidir_search_results.p", "wb"))
+                        pickle.dump([i, api_response, self._results], open("backup/scidir_search_results_" + str(i) + ".p", "wb"))
+                        
+                        print("time to get 50: {} minutes".format((time.time() - range_time) / 60))
+                        print("Total time remaining: {} hours".format(((((self.tot_num_res / 25) - i) / 50) * (time.time() - range_time)) / 3600))
+                        
+                        range_time = time.time()
+                    
+                    print("{}: {}% done".format(i, (self.num_res / self.tot_num_res) * 100))
+                    
+                    for e in api_response['search-results']['link']:
+                        if e['@ref'] == 'next':
+                            next_url = e['@href']
+                    
+                    api_response = els_client.exec_request(next_url)
+                    self._results += api_response['search-results']['entry']
+                    i+=1
+                except Exception as e:
+                    print(e)
+                    continue
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the
